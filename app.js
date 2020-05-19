@@ -33,9 +33,10 @@ app.use(passport.session());
 mongoose.connect('mongodb://localhost:27017/secretsDB', {useNewUrlParser: true, useUnifiedTopology: true});
 mongoose.set('useCreateIndex', true);
 const userSchema = new mongoose.Schema({
-    email: String,
+    username: String,
     password: String,
-    googleId: String
+    googleId: String,
+    submittedSecret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -63,7 +64,6 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(accessToken, refreshToken, profile, cb) {
-    console.log(profile)
     User.findOrCreate({ googleId: profile.id }, function (err, user) {
        ;
         
@@ -129,11 +129,22 @@ app.get( '/register', (req, res) => {
     });
 
 app.get('/secrets', (req, res) => {
-    if (req.isAuthenticated()) {
-        res.render('secrets');
-    } else {
-        res.redirect('/login');
-    }
+    // if (req.isAuthenticated()) {
+    //     res.render('secrets');
+    // } else {
+    //     res.redirect('/login');
+    // }
+    User.find({submittedSecret: {$ne: null}}, (err, foundUsers) => {
+        if (err) {
+            console.log(err);
+            
+        } else {
+            res.render('secrets', {useSecrets: foundUsers});
+            console.log(foundUsers);
+            
+            
+        }
+    });
 })
 
 app.post('/register', (req, res) => {
@@ -161,6 +172,32 @@ app.post('/register', (req, res) => {
     
     });
 });
+app.get('/submit', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.render('submit');
+    } else {
+        res.redirect('/login');
+    }
+
+});
+
+app.post('/submit', (req, res) => {
+    const allSecrets = req.body.secret;
+    User.findById(req.user.id, (err, foundUser) => {
+        if (err) {
+            console.log(err);
+            
+        } else {
+            if (foundUser) {
+                foundUser.submittedSecret = allSecrets;
+                foundUser.save( () => {
+                    res.redirect('secrets');
+                })
+            }
+        }
+    })
+    
+})
 
 app.get('/logout', (req, res) => {
     req.logOut();
