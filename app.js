@@ -87,6 +87,10 @@ app.get('/auth/google/secrets',
     res.redirect('/secrets');
 });
 
+app.get('/auth/facebook',
+    
+);
+
 app.get( '/login', (req, res) => {
         res.render('login')
     });
